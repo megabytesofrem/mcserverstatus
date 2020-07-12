@@ -4,7 +4,8 @@ char *handshakeRequest(char *address, unsigned short port) {
     int sock = 0;
 
     struct sockaddr_in serverAddress;
-    char *buffer = malloc(sizeof(char) * 10240);
+    size_t buffer_len = 10240;
+    char *buffer = malloc(sizeof(char) * buffer_len);
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf("socket creation error\n");
         return NULL;
@@ -24,7 +25,7 @@ char *handshakeRequest(char *address, unsigned short port) {
         return NULL;
     }
 
-    struct packet handshakePacket = writeHandshakePacket(address, port);
+    struct packet handshakePacket = writeHandshakePacket("2b2t.org", port);
     if (handshakePacket.content == NULL) {
         printf("handshake packet creation failed\n");
         return NULL;
@@ -37,11 +38,22 @@ char *handshakeRequest(char *address, unsigned short port) {
     followUp[1] = 0x00;
     send(sock, followUp, 2, 0);
 
-    /*int readStatus =*/read(sock, buffer, 10240);
+    free(followUp);
+
+    /*int readStatus =*/read(sock, buffer, buffer_len);
 
     struct varIntResult strSize = readVarInt((unsigned char *)buffer);
-    char *jsonServerData = malloc(sizeof(char) * strSize.result);
-    memcpy(jsonServerData, buffer + 5, strSize.result);
+    // char *jsonServerData = malloc(sizeof(char) * strSize.result);
+    char *jsonServerData = malloc(sizeof(char) * buffer_len);
+    memcpy(jsonServerData, buffer + 5, buffer_len);
+
+    free(buffer);
+
+    size_t resp_len = strlen(jsonServerData);
+    if (jsonServerData < 1) {
+        free(jsonServerData);
+        return NULL;
+    }
 
     return jsonServerData;
 }
