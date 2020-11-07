@@ -26,6 +26,8 @@ max players: 20
 
 ## Todo
 
+- [ ] Error handling
+- [ ] Remove hard coded buffer size for TCP request
 - [ ] SRV record support
 - [ ] Favicon decoding and presenting
 - [ ] Wrap code in a library
@@ -33,6 +35,6 @@ max players: 20
 
 ## D
 
-This project is written in D. If you haven't tried out the language I recommend it, its similar in nature to C++ but it doesn't come with most of the annoyances or ambiguity while writing code.
+This project is written in D. If you haven't tried out the language I recommend it, its similar in nature to C++ but it doesn't come with most of the annoyances or ambiguity. It also has modern language features and the best mascot of any language.
 
 ![og d-man](https://raw.githubusercontent.com/harrego/mcserverstatus/master/.github/dman.png)
