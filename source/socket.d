@@ -8,6 +8,8 @@ import std.conv;
 import varint;
 import packet;
 
+// https://wiki.vg/Server_List_Ping
+
 ubyte[] handshakeRequest(string serverAddress, ushort port) {
     Socket listener = new TcpSocket;
     assert(listener.isAlive);
@@ -22,25 +24,27 @@ ubyte[] handshakeRequest(string serverAddress, ushort port) {
     ubyte[2] followup = [ 0x01, 0x00 ];
     listener.send(followup);
 
+    ubyte[1024] buf;
+    ubyte[] data;
+
     while (true) {
         long bytes;
-        // NOTE: this is temporary, will most likely loop with 2k buffer until data complete or read initial varint to determine size
-        ubyte[20000] buf;
         bytes = listener.receive(buf);
+
         if (bytes == Socket.ERROR) {
             listener.close();
             throw new StringException("Connection Error: ", lastSocketError());
         } else if (bytes == 0) {
             listener.close();
-            try {
-                throw new StringException("Lost connection");
-            } catch (SocketException) {
-                throw new StringException("Connection closed");
-            }
+            throw new StringException("Connection closed");
         } else {
-            // writeln("Recieved ", bytes, "bytes from ", to!string(listener.remoteAddress()));
-            // NOTE: not sure if .dup is best idea, may need to change
-            return buf.dup;
+             writeln("Recieved ", bytes, "bytes from ", to!string(listener.remoteAddress()));
+             data = data ~ buf[0..bytes+1];
+             if (data[data.length - 1] == 0) {
+                // End of string
+                listener.close();
+                return data.dup;
+             }
         }
     }
 }

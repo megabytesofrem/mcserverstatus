@@ -35,7 +35,7 @@ private struct ResponseStream {
 }
 
 struct MinecraftServer {
-    string text = "none";
+    string text = "";
 
     string versionName;
     long versionProtocol;

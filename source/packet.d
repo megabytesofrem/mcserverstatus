@@ -6,6 +6,9 @@ import std.stdio;
 import std.conv;
 import std.bitmanip;
 
+// Documented packet
+// https://wiki.vg/Server_List_Ping
+
 ubyte[] writeHandshakePacket(string serverAddress, ushort port) {
 
     int contentPacketSize = 0;
