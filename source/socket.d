@@ -24,7 +24,7 @@ ubyte[] handshakeRequest(string serverAddress, ushort port) {
     ubyte[2] followup = [ 0x01, 0x00 ];
     listener.send(followup);
 
-    ubyte[1024] buf;
+    ubyte[20000] buf;
     ubyte[] data;
 
     while (true) {

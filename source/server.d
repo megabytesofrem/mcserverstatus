@@ -4,6 +4,7 @@ import std.stdio;
 import std.json;
 import std.conv;
 import std.string;
+import std.utf;
 
 import varint;
 
@@ -34,6 +35,58 @@ private struct ResponseStream {
     }
 }
 
+private enum FaviconReadState { initial, dataType, encoding, data };
+
+private ubyte[] readFavicon(immutable(ubyte[]) favicon) {
+    FaviconReadState state = FaviconReadState.initial;
+    ubyte[] buf;
+    foreach (favByte; favicon) {
+        buf = buf ~ favByte;
+        switch (state) {
+            case FaviconReadState.initial:
+                if (cast(char)favByte == ':') {
+                    if (cast(string)buf == "data:") {
+                        writeln("debug: state moving to dataType");
+                        buf = [];
+                        state = FaviconReadState.dataType;
+                    }
+                } else {
+                    // error
+                }
+                break;
+            case FaviconReadState.dataType:
+                if (cast(char)favByte == ';') {
+                    if (cast(string)buf == "image/png;") {
+                        writeln("debug: state moving to encoding");
+                        state = FaviconReadState.encoding;
+                        buf = [];
+                    } else {
+                        // error
+                    }
+                }
+                break;
+            case FaviconReadState.encoding:
+                if (cast(byte)favByte == ',') {
+                    if (cast(string)buf == "base64,") {
+                        writeln("debug: state moving to data");
+                        state = FaviconReadState.data;
+                        buf = [];
+                    } else {
+                        // error
+                    }
+                }
+                break;
+            case FaviconReadState.data:
+                // do nothing until the foreach ends
+                break;
+            default:
+                break;
+        }
+    }
+    writeln("debug: finished reading favicon, b64 encoded length: ", buf.length, " bytes");
+    return [];
+}
+
 struct MinecraftServer {
     string text = "";
 
@@ -62,5 +115,12 @@ struct MinecraftServer {
 
         this.players = data["players"]["online"].integer;
         this.maxPlayers = data["players"]["max"].integer;
+
+        try {
+            readFavicon(data["favicon"].str.representation);
+        } catch (JSONException) {
+            writeln("no favicon");
+        }
+        
     }
 }
