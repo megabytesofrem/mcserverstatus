@@ -6,16 +6,20 @@ import packet;
 import socket;
 import server;
 import varint;
+import cli;
 
-int main(string[] args) {
-	ubyte[] data = handshakeRequest("localhost", 25565);
-	MinecraftServer server = MinecraftServer(data);
+int main(string[] argv) {
 
-	writefln("SERVER INFO\n\ntext: %s\n\nversion name: %s\nversion protocol: %d\n\nplayers: %d\nmax players: %d", server.text, server.versionName, server.versionProtocol, server.players, server.maxPlayers);
+	parseArgv(argv[1..$]);
 
-	if (server.favicon.length > 0) {
-		writeln("[server has a favicon]");
-	}
+	//ubyte[] data = handshakeRequest("localhost", 25565);
+	//MinecraftServer server = MinecraftServer(data);
+
+	//writefln("SERVER INFO\n\ntext: %s\n\nversion name: %s\nversion protocol: %d\n\nplayers: %d\nmax players: %d", server.text, server.versionName, server.versionProtocol, server.players, server.maxPlayers);
+
+	//if (server.favicon.length > 0) {
+	//	writeln("[server has a favicon]");
+	//}
 
 	return 0;
 }

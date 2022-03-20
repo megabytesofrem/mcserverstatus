@@ -26,10 +26,7 @@ max players: 20
 
 ## Todo
 
-- [ ] Error handling
-- [ ] Remove hard coded buffer size for TCP request
 - [ ] SRV record support
-- [ ] Favicon decoding and presenting
 - [ ] Wrap code in a library
 - [ ] Minecraft color codes -> shell color codes
 
