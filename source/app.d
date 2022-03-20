@@ -13,5 +13,9 @@ int main(string[] args) {
 
 	writefln("SERVER INFO\n\ntext: %s\n\nversion name: %s\nversion protocol: %d\n\nplayers: %d\nmax players: %d", server.text, server.versionName, server.versionProtocol, server.players, server.maxPlayers);
 
+	if (server.favicon.length > 0) {
+		writeln("[server has a favicon]");
+	}
+
 	return 0;
 }

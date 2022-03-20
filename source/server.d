@@ -5,6 +5,8 @@ import std.json;
 import std.conv;
 import std.string;
 import std.utf;
+import std.base64;
+import std.file;
 
 import varint;
 
@@ -83,8 +85,12 @@ private ubyte[] readFavicon(immutable(ubyte[]) favicon) {
                 break;
         }
     }
-    writeln("debug: finished reading favicon, b64 encoded length: ", buf.length, " bytes");
-    return [];
+
+    if (state == FaviconReadState.data) {
+        return Base64.decode(buf);
+    } else {
+        return [];
+    }
 }
 
 struct MinecraftServer {
@@ -96,7 +102,7 @@ struct MinecraftServer {
     long players;
     long maxPlayers;
 
-    // ubyte[] favicon;
+    ubyte[] favicon = [];
 
     this(ubyte[] response) {
         ResponseStream stream = ResponseStream(response);
@@ -117,10 +123,8 @@ struct MinecraftServer {
         this.maxPlayers = data["players"]["max"].integer;
 
         try {
-            readFavicon(data["favicon"].str.representation);
-        } catch (JSONException) {
-            writeln("no favicon");
-        }
-        
+            ubyte[] faviconData = readFavicon(data["favicon"].str.representation);
+            this.favicon = faviconData;
+        } catch (JSONException) { }
     }
 }
