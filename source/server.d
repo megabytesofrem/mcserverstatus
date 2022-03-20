@@ -51,9 +51,10 @@ private ubyte[] readFavicon(immutable(ubyte[]) favicon) {
                         writeln("debug: state moving to dataType");
                         buf = [];
                         state = FaviconReadState.dataType;
+                    } else {
+                        // Unparseable data
+                        return [];
                     }
-                } else {
-                    // error
                 }
                 break;
             case FaviconReadState.dataType:
@@ -63,7 +64,7 @@ private ubyte[] readFavicon(immutable(ubyte[]) favicon) {
                         state = FaviconReadState.encoding;
                         buf = [];
                     } else {
-                        // error
+                        return [];
                     }
                 }
                 break;
@@ -74,12 +75,11 @@ private ubyte[] readFavicon(immutable(ubyte[]) favicon) {
                         state = FaviconReadState.data;
                         buf = [];
                     } else {
-                        // error
+                        return [];
                     }
                 }
                 break;
             case FaviconReadState.data:
-                // do nothing until the foreach ends
                 break;
             default:
                 break;
@@ -87,7 +87,12 @@ private ubyte[] readFavicon(immutable(ubyte[]) favicon) {
     }
 
     if (state == FaviconReadState.data) {
-        return Base64.decode(buf);
+        try {
+            return Base64.decode(buf);
+        } catch (Base64Exception) {
+            return [];
+        }
+        
     } else {
         return [];
     }
