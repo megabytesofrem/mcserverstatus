@@ -9,18 +9,26 @@ struct CommandLineArgument {
 	string name;
 	char flag;
 	string description;
-	bool takesArgument = false;
+	Nullable!string str = Nullable!string.init;
+	bool acceptsStr = false;
+	bool requiresStr = false;
 
-	this(string name, char flag, string description) {
+	this(string name, char flag, string description, bool acceptsStr, bool requiresStr) {
 		this.name = name;
 		this.flag = flag;
 		this.description = description;
-		this.takesArgument = takesArgument;
+		this.acceptsStr = acceptsStr;
+		this.requiresStr = requiresStr;
 	}
 }
 
+struct CommandLineResult {
+	string command = "";
+	CommandLineArgument[] arguments;
+}
+
 CommandLineArgument[] arguments = [
-	CommandLineArgument("verbose", 'v', "Verbose log")
+	CommandLineArgument("verbose", 'v', "Verbose log", true, false)
 ];
 
 Nullable!CommandLineArgument parseFlag(char flag) {
@@ -47,22 +55,35 @@ class CommandLineException: Exception {
     }
 }
 
-private enum CommandLineState { waiting, dash, flags, argument }
+private enum CommandLineState { waiting, dash, flags, argument, argumentStr, command }
 
-void parseArgv(string[] argv) {
+CommandLineResult parseArgv(string[] argv) {
+	CommandLineResult result;
+
 	CommandLineState state = CommandLineState.waiting;
+	Nullable!CommandLineArgument pendingArgument = Nullable!CommandLineArgument.init;
 	char[] buffer;
 	foreach(arg; argv) {
+		if (state == CommandLineState.flags) { state = CommandLineState.waiting; }
 		foreach(ch; arg) {
 			switch (state) {
 				case CommandLineState.waiting:
 					switch (ch) {
 						case '-':
+							writeln("dashg");
 							state = CommandLineState.dash;
 							break;
 						default:
-							throw new CommandLineException("Unexpected char");
+							if (result.command.length <= 0) {
+								state = CommandLineState.command;
+								buffer = [ch];
+							} else {
+								throw new CommandLineException("Unexpected char");
+							}
 					}
+					break;
+				case CommandLineState.command:
+					buffer ~= ch;
 					break;
 				case CommandLineState.dash:
 					switch (ch) {
@@ -71,9 +92,10 @@ void parseArgv(string[] argv) {
 							state = CommandLineState.argument;
 							break;
 						default:
+							state = CommandLineState.flags;
 							Nullable!CommandLineArgument parsedArgument = parseFlag(ch);
 							if (!parsedArgument.isNull) {
-								writeln("found flag: ", parsedArgument.get.name);
+								result.arguments ~= parsedArgument.get;								
 							} else {
 								throw new CommandLineException("Invalid char: " ~ ch);
 							}
@@ -83,9 +105,27 @@ void parseArgv(string[] argv) {
 				case CommandLineState.flags:
 					Nullable!CommandLineArgument parsedArgument = parseFlag(ch);
 					if (!parsedArgument.isNull) {
-						writeln("found flags: ", parsedArgument.get.name);
+						writeln("new arg: " ~ parsedArgument.get.name);
+						result.arguments ~= parsedArgument.get;
 					} else {
 						throw new CommandLineException("invalid char: " ~ ch);
+					}
+					break;
+				case CommandLineState.argumentStr:
+					if (pendingArgument.isNull) {
+						throw new CommandLineException("somethign went very wrong");
+					}
+					switch (ch) {
+						case '-':
+							if (pendingArgument.get.requiresStr) {
+								throw new CommandLineException("Argument " ~ pendingArgument.get.name ~ " expects a following string");
+							} else {
+								state = CommandLineState.dash;
+							}
+							break;
+						default:
+							buffer ~= ch;
+							break;
 					}
 					break;
 				case CommandLineState.argument:
@@ -95,11 +135,19 @@ void parseArgv(string[] argv) {
 					break;
 			}
 		}
-		if (state == CommandLineState.argument) {
+		if (state == CommandLineState.command) {
+			result.command = cast(string)buffer;
+			buffer = [];
+		} else if (state == CommandLineState.argument) {
 			if (buffer.length > 0) {
 				Nullable!CommandLineArgument parsedArgument = parseArgument(cast(string)buffer);
 				if (!parsedArgument.isNull) {
-					writeln("found argument: " ~ parsedArgument.get.name);
+					if (parsedArgument.get.acceptsStr) {
+						state = CommandLineState.argumentStr;
+						pendingArgument = parsedArgument;
+					} else {
+						result.arguments ~= parsedArgument.get;
+					}
 					buffer = [];
 				} else {
 					throw new CommandLineException("invalid argument: " ~ cast(string)buffer);
@@ -107,6 +155,22 @@ void parseArgv(string[] argv) {
 			} else {
 				throw new CommandLineException("empty argument");
 			}
+		} else if (state == CommandLineState.argumentStr) {
+			if (buffer.length > 0) {
+				pendingArgument.get.str = cast(string)buffer;
+				result.arguments ~= pendingArgument.get;
+				buffer = [];
+				pendingArgument = Nullable!CommandLineArgument.init;
+				state = CommandLineState.waiting;
+			} else {
+				if (pendingArgument.get.requiresStr) {
+					throw new CommandLineException("Argument " ~ pendingArgument.get.name ~ " expects a following string");
+				}
+			}
 		}
 	}
+	if (result.command.length <= 0) {
+		throw new CommandLineException("Must give a command");
+	}
+	return result;
 }

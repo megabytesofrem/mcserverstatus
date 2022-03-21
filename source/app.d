@@ -10,7 +10,14 @@ import cli;
 
 int main(string[] argv) {
 
-	parseArgv(argv[1..$]);
+	CommandLineResult cli = parseArgv(argv[1..$]);
+	writeln("command: " ~ cli.command);
+	foreach(arg; cli.arguments) {
+		writeln("\nargument: " ~ arg.name);
+		if (!arg.str.isNull) {
+			writeln("str: " ~ arg.str.get);
+		}
+	}
 
 	//ubyte[] data = handshakeRequest("localhost", 25565);
 	//MinecraftServer server = MinecraftServer(data);
