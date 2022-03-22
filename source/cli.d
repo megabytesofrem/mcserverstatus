@@ -27,11 +27,7 @@ struct CommandLineResult {
 	CommandLineArgument[] arguments;
 }
 
-CommandLineArgument[] arguments = [
-	CommandLineArgument("verbose", 'v', "Verbose log", true, false)
-];
-
-Nullable!CommandLineArgument parseFlag(char flag) {
+Nullable!CommandLineArgument parseFlag(char flag, CommandLineArgument[] arguments) {
 	foreach(arg; arguments) {
 		if (arg.flag == flag) {
 			return arg.nullable;
@@ -40,7 +36,7 @@ Nullable!CommandLineArgument parseFlag(char flag) {
 	return Nullable!CommandLineArgument.init;
 }
 
-Nullable!CommandLineArgument parseArgument(string name) {
+Nullable!CommandLineArgument parseArgument(string name, CommandLineArgument[] arguments) {
 	foreach(arg; arguments) {
 		if (arg.name == name) {
 			return arg.nullable;
@@ -57,7 +53,7 @@ class CommandLineException: Exception {
 
 private enum CommandLineState { waiting, dash, flags, argument, argumentStr, command }
 
-CommandLineResult parseArgv(string[] argv) {
+CommandLineResult parseArgv(string[] argv, CommandLineArgument[] arguments) {
 	CommandLineResult result;
 
 	CommandLineState state = CommandLineState.waiting;
@@ -70,7 +66,6 @@ CommandLineResult parseArgv(string[] argv) {
 				case CommandLineState.waiting:
 					switch (ch) {
 						case '-':
-							writeln("dashg");
 							state = CommandLineState.dash;
 							break;
 						default:
@@ -93,7 +88,7 @@ CommandLineResult parseArgv(string[] argv) {
 							break;
 						default:
 							state = CommandLineState.flags;
-							Nullable!CommandLineArgument parsedArgument = parseFlag(ch);
+							Nullable!CommandLineArgument parsedArgument = parseFlag(ch, arguments);
 							if (!parsedArgument.isNull) {
 								result.arguments ~= parsedArgument.get;								
 							} else {
@@ -103,9 +98,8 @@ CommandLineResult parseArgv(string[] argv) {
 					}
 					break;
 				case CommandLineState.flags:
-					Nullable!CommandLineArgument parsedArgument = parseFlag(ch);
+					Nullable!CommandLineArgument parsedArgument = parseFlag(ch, arguments);
 					if (!parsedArgument.isNull) {
-						writeln("new arg: " ~ parsedArgument.get.name);
 						result.arguments ~= parsedArgument.get;
 					} else {
 						throw new CommandLineException("invalid char: " ~ ch);
@@ -138,9 +132,10 @@ CommandLineResult parseArgv(string[] argv) {
 		if (state == CommandLineState.command) {
 			result.command = cast(string)buffer;
 			buffer = [];
+			state = CommandLineState.waiting;
 		} else if (state == CommandLineState.argument) {
 			if (buffer.length > 0) {
-				Nullable!CommandLineArgument parsedArgument = parseArgument(cast(string)buffer);
+				Nullable!CommandLineArgument parsedArgument = parseArgument(cast(string)buffer, arguments);
 				if (!parsedArgument.isNull) {
 					if (parsedArgument.get.acceptsStr) {
 						state = CommandLineState.argumentStr;
