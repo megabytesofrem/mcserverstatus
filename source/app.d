@@ -11,6 +11,8 @@ import server;
 import varint;
 import cli;
 
+import colors;
+
 CommandLineArgument argumentVerbose = CommandLineArgument("verbose", 'v', "Verbose log", true, false);
 
 int main(string[] argv) {
@@ -44,6 +46,8 @@ int main(string[] argv) {
 	MinecraftServer server = MinecraftServer(data);
 
 	writefln("SERVER INFO\n\ntext: %s\n\nversion name: %s\nversion protocol: %d\n\nplayers: %d\nmax players: %d", server.text, server.versionName, server.versionProtocol, server.players, server.maxPlayers);
+
+	// Convert the minecraft colors to ANSI colors
 
 	if (server.favicon.length > 0) {
 		writeln("[server has a favicon]");
